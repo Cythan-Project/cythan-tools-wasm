@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <title>Editor</title>
+    <style type="text/css" media="screen">
+        .ace_marker-layer .ace_error {
+            margin: -1px 0 0 -1px;
+            border-radius: 0px;
+            border-bottom: 1px solid red;
+            background: #0000 !important;
+        }
+
+        body {
+
+            overflow: hidden;
+        }
+
+        * {
+            font-size: 1rem !important;
+        }
+
+        #editor {
+            margin: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 50vw;
+        }
+
+        #superset {
+            padding: 0.25rem;
+            margin: 0;
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50vw;
+            right: 0;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #display {
+            flex-grow: 1;
+        }
+
+        #display pre {
+            margin: 0;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <pre id="editor"></pre>
+
+    <div id="superset">
+        <select id="thelist" onChange="combo(this)">
+        </select>
+
+        <div id="display"></div>
+    </div>
+
+    <script src="ace-editor/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script>
+        var themes = ["ambiance", "chaos", "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn", "dracula", "dreamweaver", "eclipse", "github", "gob", "gruvbox", "idle_fingers", "iplastic", "katzenmilch", "kr_theme", "kuroir", "merbivore", "merbivore_soft", "mono_industrial", "monokai", "nord_dark", "pastel_on_dark", "solarized_dark", "solarized_light", "sqlserver", "terminal", "textmate", "tomorrow", "tomorrow_night", "tomorrow_night_blue", "tomorrow_night_bright", "tomorrow_night_eighties", "twilight", "vibrant_ink", "xcode"]
+
+        var editor = ace.edit("editor");
+        editor.setTheme("ace/theme/twilight");
+
+        document.getElementById("thelist").innerHTML = "<option>" + themes.join("</option><option>") + "</option>";
+        document.getElementById("thelist").selectedIndex = themes.indexOf("twilight");
+
+        function changeTheme(theme) {
+            editor.setTheme("ace/theme/" + theme);
+        }
+
+        function combo(thelist) {
+            var idx = thelist.selectedIndex;
+            var content = thelist.options[idx].innerText;
+            changeTheme(content)
+        }
+
+        editor.session.setMode("ace/mode/cythan");
+
+        let lastValue = "";
+
+
+
+        const classes = "ace_selection ace_error";
+
+
+        editor.addEventListener("input", () => {
+
+            const newValue = editor.getValue();
+
+
+            if (lastValue === newValue || window.compile_to_cythan === undefined) {
+                return;
+            }
+
+            lastValue = newValue;
+
+            const display = document.getElementById("display");
+
+            display.innerHTML = "";
+            let compiled = window.compile_to_cythan(newValue);
+            for (let i of compiled.split("\r\n")) {
+                if (i.length > 60 && !i.includes("Don't stopped")) {
+                    let count = 0;
+                    let out = "";
+                    for (var v of i.split(" ")) {
+                        count += v.length + 1;
+                        if (count > 60) {
+                            out = out + "\r\n";
+                            count = v.length + 1;
+                        }
+                        out = out + v + " ";
+                    }
+                    i = out;
+                }
+                let o = document.createElement("pre");
+                o.innerText = i;
+                display.appendChild(o);
+            }
+            for (const i of Object.values(editor.session.getMarkers())) {
+                if (i.type === "error") {
+                    editor.session.removeMarker(i.id);
+                }
+            }
+            if (compiled.includes("Error from line ")) {
+                let p = compiled.split("Error from line ")[1];
+                let splited = p.split(" [");
+
+                let line1 = parseInt(splited[0].trim()) - 1;
+                let line2 = parseInt(splited[1].split("]")[1].replace("to line", "").trim()) - 1;
+                let caret_start = parseInt(splited[1].split("]")[0]);
+                let caret_end = parseInt(splited[2].split("]")[0]);
+                let lines = newValue.split(/\r?\n/);
+                const currentError = [];
+                currentError.push([line1, caret_start, line1, lines[line1].length]);
+                for (let o = line1 + 1; o < line2; o++) {
+                    currentError.push([o, 0, o, lines[o].length]);
+                }
+                currentError.push([line2, 0, line2, caret_end]);
+                let anot = [];
+                let e = compiled.split(/\r?\n/)[1];
+                for (var errors of currentError) {
+                    editor.session.addMarker(new ace.Range(errors[0], errors[1], errors[2], errors[3]), classes, "error")
+                    anot.push({
+                        row: errors[0],
+                        column: errors[1],
+                        text: e,
+                        type: "error" // also warning and information
+                    })
+                }
+                editor.getSession().setAnnotations(anot);
+            } else if (compiled.includes("Error line ")) {
+                let p = compiled.split("Error line ")[1];
+                let splited = p.split("]")[0].split("[");
+
+                let line = parseInt(splited[0].trim()) - 1;
+                let caret_start = parseInt(splited[1].split(",")[0]);
+                let caret_end = parseInt(splited[1].split(",")[1]);
+                editor.session.addMarker(new ace.Range(line, caret_start, line, caret_end), classes, "error")
+                editor.getSession().setAnnotations([{
+                    row: line,
+                    column: caret_start,
+                    text: compiled.split(/\r?\n/)[1],
+                    type: "error" // also warning and information
+                }]);
+            } else {
+                editor.getSession().setAnnotations([]);
+            }
+
+        });
+    </script>
+    <script type="module">
+        import init, { compile_to_cythan, format_code } from './pkg/package.js';
+        init('./pkg/package_bg.wasm').then(() => {
+            window.compile_to_cythan = compile_to_cythan;
+            window.format_code = format_code;
+            console.log("Cythan compiler embed");
+        });
+    </script>
+
+</body>
+
+</html>

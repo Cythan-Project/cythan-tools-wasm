@@ -1,0 +1,29 @@
+[package]
+version = "0.1.0"
+name = "cythan-tools-wasm"
+repository = "https://github.com/seed-rs/seed-quickstart"
+authors = ["Laurent Gaucheron <gaucheron.laurent@gmail.com>"]
+description = "App Description"
+categories = ["category"]
+license = "MIT"
+readme = "./README.md"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib"]
+
+[dev-dependencies]
+wasm-bindgen-test = "0.3.13"
+
+[dependencies]
+wasm-bindgen = "*"
+cythan-compiler = {git = "https://github.com/Cythan-Project/cythan-compiler#26d0194"}
+cythan = {git = "https://github.com/Cythan-Project/Cythan-V3#26d0194"}
+
+[profile.release]
+lto = true
+opt-level = 'z'
+codegen-units = 1
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = ["-O", "--enable-mutable-globals"]
