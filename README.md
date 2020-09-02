@@ -1,6 +1,6 @@
 # cythan-tools-wasm
  A set of tools that can be used from JS to execute cythan
- See a online demo on [https://ccgauche.github.io/cythan/index.html](https://ccgauche.github.io/cythan/index.html)
+ See a online demo on [https://ccgauche.github.io/cythan/](https://ccgauche.github.io/cythan/)
 
 ## Build from source
 
