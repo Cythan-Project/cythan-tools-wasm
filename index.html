@@ -85,6 +85,25 @@
             changeTheme(content)
         }
 
+        function stringToQuickFix(string) {
+            const t = string.split("\r\n");
+            const a = t[1].split(";");
+            return {
+                "text": t[0],
+                "length": parseInt(a[2]),
+                "line": parseInt(a[0]),
+                "caret": parseInt(a[1]),
+            };
+        }
+
+        function replaceInString(object) {
+            const string = editor.getSession().getValue();
+            let t = string.split("\n");
+            const u = t[object.line];
+            t[object.line] = u.substr(0, object.caret) + object.text + u.substr(object.caret + object.length, u.length);
+            editor.getSession().setValue(t.join("\n"));
+        }
+
         editor.session.setMode("ace/mode/cythan");
 
         let lastValue = "";
