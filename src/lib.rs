@@ -8,7 +8,7 @@ pub fn compile_to_cythan(cythan_code: String) -> String {
         Ok(e) => {
             let out = e
                 .iter()
-                .map(u32::to_string)
+                .map(usize::to_string)
                 .collect::<Vec<String>>()
                 .join(" ");
 
@@ -39,7 +39,7 @@ pub fn compile_to_cythan(cythan_code: String) -> String {
 use cythan_compiler::quick_fix::*;
 
 fn try_generate_quick_fix(fix: &QuickFix) -> Option<String> {
-    if let QuickFixPosition::REPLACE_FIRST(length) = fix.placement {
+    if let QuickFixPosition::ReplaceFirst(length) = fix.placement {
         Some(format!(
             "{}\r\n{};{};{}",
             fix.text, length, fix.position.line_from, fix.position.caret_from
@@ -49,7 +49,7 @@ fn try_generate_quick_fix(fix: &QuickFix) -> Option<String> {
     }
 }
 
-pub fn try_compute(code: &[u32]) -> Result<Vec<usize>, Vec<usize>> {
+pub fn try_compute(code: &[usize]) -> Result<Vec<usize>, Vec<usize>> {
     use cythan::{BasicCythan, Cythan};
 
     let mut cy = BasicCythan::new(code.iter().map(|x| *x as usize).collect());
@@ -87,7 +87,7 @@ pub fn format_code(cythan_code: String) -> String {
     }
 }
 
-fn _compile_to_cythan(cythan_code: &str) -> Result<Vec<u32>, String> {
+fn _compile_to_cythan(cythan_code: &str) -> Result<Vec<usize>, String> {
     Ok(cythan_compiler::Context::default()
         .compute(&cythan_compiler::generate_tokens(cythan_code).map_err(|x| {
             format!(
