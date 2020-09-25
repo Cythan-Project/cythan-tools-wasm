@@ -67,10 +67,15 @@
 
     <script src="ace-editor/ace.js" type="text/javascript" charset="utf-8"></script>
     <script>
+        let text = window.localStorage.getItem('fileData');
+        if (text === undefined || text === null) {
+            text = "";
+        }
         var themes = ["ambiance", "chaos", "chrome", "clouds", "clouds_midnight", "cobalt", "crimson_editor", "dawn", "dracula", "dreamweaver", "eclipse", "github", "gob", "gruvbox", "idle_fingers", "iplastic", "katzenmilch", "kr_theme", "kuroir", "merbivore", "merbivore_soft", "mono_industrial", "monokai", "nord_dark", "pastel_on_dark", "solarized_dark", "solarized_light", "sqlserver", "terminal", "textmate", "tomorrow", "tomorrow_night", "tomorrow_night_blue", "tomorrow_night_bright", "tomorrow_night_eighties", "twilight", "vibrant_ink", "xcode"]
 
         var editor = ace.edit("editor");
         editor.setTheme("ace/theme/monokai");
+        editor.getSession().setValue(text);
 
         document.getElementById("thelist").innerHTML = "<option>" + themes.join("</option><option>") + "</option>";
         document.getElementById("thelist").selectedIndex = themes.indexOf("monokai");
@@ -112,15 +117,17 @@
 
         const classes = "ace_selection ace_error";
 
-
-        editor.addEventListener("input", () => {
-
+        function reCompile() {
             const newValue = editor.getValue();
 
 
             if (lastValue === newValue || window.compile_to_cythan === undefined) {
                 return;
             }
+
+            setTimeout(() => {
+                window.localStorage.setItem('fileData', newValue);
+            });
 
             lastValue = newValue;
 
@@ -196,8 +203,12 @@
             } else {
                 editor.getSession().setAnnotations([]);
             }
+        }
 
-        });
+        window.reCompile = reCompile;
+
+
+        editor.addEventListener("input", reCompile);
     </script>
     <script type="module">
         import init, { compile_to_cythan, format_code } from './pkg/package.js';
@@ -205,6 +216,7 @@
             window.compile_to_cythan = compile_to_cythan;
             window.format_code = format_code;
             console.log("Cythan compiler embed");
+            window.reCompile();
         });
     </script>
 

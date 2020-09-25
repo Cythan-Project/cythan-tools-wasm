@@ -36,7 +36,7 @@ pub fn compile_to_cythan(cythan_code: String) -> String {
     }
 }
 
-use cythan_compiler::quick_fix::*;
+use cythan_compiler::*;
 
 fn try_generate_quick_fix(fix: &QuickFix) -> Option<String> {
     if let QuickFixPosition::ReplaceFirst(length) = fix.placement {
@@ -88,29 +88,17 @@ pub fn format_code(cythan_code: String) -> String {
 }
 
 fn _compile_to_cythan(cythan_code: &str) -> Result<Vec<usize>, String> {
-    Ok(cythan_compiler::Context::default()
-        .compute(&cythan_compiler::generate_tokens(cythan_code).map_err(|x| {
-            format!(
-                "{}\r\n\r\n\r\n{}",
-                x.to_string(),
-                x.get_fixes()
-                    .iter()
-                    .flat_map(|x| try_generate_quick_fix(x))
-                    .collect::<Vec<String>>()
-                    .join("\r\n\r\n\r\n")
-            )
-        })?)
-        .map_err(|x| {
-            format!(
-                "{}\r\n\r\n\r\n{}",
-                x.to_string(),
-                x.get_fixes()
-                    .iter()
-                    .flat_map(|x| try_generate_quick_fix(x))
-                    .collect::<Vec<String>>()
-                    .join("\r\n\r\n\r\n")
-            )
-        })?)
+    Ok(cythan_compiler::compile(cythan_code).map_err(|x| {
+        format!(
+            "{}\r\n\r\n\r\n{}",
+            x.to_string(),
+            x.get_fixes()
+                .iter()
+                .flat_map(|x| try_generate_quick_fix(x))
+                .collect::<Vec<String>>()
+                .join("\r\n\r\n\r\n")
+        )
+    })?)
 }
 
 fn _format_code(cythan_code: &str) -> Result<String, String> {
